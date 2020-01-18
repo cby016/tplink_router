@@ -1,6 +1,6 @@
 # TPLink Router Device Tracker for Home Assistant
 
-Recently the tplink device tracker code was removed from Home Assistant. 
+Recently the tplink device tracker code was [removed](https://github.com/home-assistant/home-assistant/pull/27936) from Home Assistant. 
 
 This repository allows users to create a custom component and continue to use the tplink device tracker.
 
