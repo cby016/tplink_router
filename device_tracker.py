@@ -69,6 +69,7 @@ def get_scanner(hass, config):
         "the device-specific parts to the tplink library"
     )
     for cls in [
+        XDRSeriesTplinkDeviceScanner,
         TplinkDeviceScanner,
         Tplink5DeviceScanner,
         Tplink4DeviceScanner,
@@ -507,3 +508,74 @@ class Tplink5DeviceScanner(Tplink1DeviceScanner):
 
         return False
 
+
+class XDRSeriesTplinkDeviceScanner(TplinkDeviceScanner):
+     """This class requires a XDR series with routers with 1.0.10 firmware or above"""
+
+     def __init__(self, config):
+         """Initialize the scanner."""
+         self.stok = ''
+         self.sysauth = ''
+         super(XDRSeriesTplinkDeviceScanner, self).__init__(config)
+
+     def _get_auth_tokens(self):
+         """Retrieve auth tokens from the router."""
+         _LOGGER.info("Retrieving auth tokens...")
+
+         url = 'http://{}'.format(self.host)
+         referer = url
+         data = {"method":"do","login":{"password":"{}".format(self.password)}}
+
+         response = requests.post(url, headers={REFERER: referer}, data='{}'.format(data), timeout=4)
+
+         try:
+             self.stok = response.json().get('stok')
+             return True
+         except (ValueError, KeyError, AttributeError) as _:
+             _LOGGER.error("Couldn't fetch auth tokens! Response was: %s",
+                           response.text)
+             return False
+
+
+     def _update_info(self):
+         """Ensure the information from the TP-Link router is up to date.
+         Return boolean if scanning successful.
+         """
+         _LOGGER.info("[XDRSeries] Loading wireless clients...")
+
+         if (self.stok == ''):
+             self._get_auth_tokens()
+
+         url = 'http://{}/stok={}/ds'.format(self.host, self.stok)
+         referer = 'http://{}'.format(self.host)
+         data = '{"hosts_info":{"table":"online_host"},"method":"get"}'
+
+         response = requests.post(url, headers={REFERER:referer}, data=data, timeout=5)
+
+         try:
+             json_response = response.json()
+
+             if json_response.get('error_code') == 0:
+                 result = response.json().get('hosts_info').get('online_host')
+             else:
+                 _LOGGER.error(
+                     "An unknown error happened while fetching data")
+                 return False
+         except ValueError:
+             _LOGGER.error("Router didn't respond with JSON. "
+                           "Check if credentials are correct")
+             return False
+
+         if result:
+ #            restructure result
+             result_cache = []
+             for i in result:
+                 result_cache.append(list(i.values())[0])
+
+             self.last_results = {
+                 device['mac'].replace('-', ':'): device['mac']
+                 for device in result_cache
+                 }
+             return True
+
+         return False
