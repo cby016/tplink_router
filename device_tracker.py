@@ -218,7 +218,7 @@ class Tplink2DeviceScanner(Tplink1DeviceScanner):
         cookie = f"Authorization=Basic {b64_encoded_username_password}"
 
         response = requests.post(
-            url, headers={REFERER: referer, COOKIE: cookie}, timeout=4
+            url, headers={REFERER: referer, "Cookie": cookie}, timeout=4
         )
 
         try:
@@ -394,7 +394,7 @@ class Tplink4DeviceScanner(Tplink1DeviceScanner):
         # Create the authorization cookie.
         cookie = f"Authorization=Basic {self.credentials}"
 
-        response = requests.get(url, headers={COOKIE: cookie})
+        response = requests.get(url, headers={"Cookie": cookie})
 
         try:
             result = re.search(
@@ -428,7 +428,7 @@ class Tplink4DeviceScanner(Tplink1DeviceScanner):
             referer = f"http://{self.host}"
             cookie = f"Authorization=Basic {self.credentials}"
 
-            page = requests.get(url, headers={COOKIE: cookie, REFERER: referer})
+            page = requests.get(url, headers={"Cookie": cookie, "Referer": referer})
             mac_results.extend(self.parse_macs.findall(page.text))
 
         if not mac_results:
