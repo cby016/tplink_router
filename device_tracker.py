@@ -4,6 +4,7 @@ from datetime import datetime
 import hashlib
 import logging
 import re
+import os
 
 from aiohttp.hdrs import (
     ACCEPT,
@@ -89,15 +90,20 @@ class TplinkDeviceScanner(DeviceScanner):
 
     def __init__(self, config):
         """Initialize the scanner."""
-        from tplink.tplink import TpLinkClient
+        try:
+           from tplink.tplink import TpLinkClient
+        except ImportError:
+           os.system("pip install tplink")
+           from tplink.tplink import TpLinkClient
 
-        host = config[CONF_HOST]
-        password = config[CONF_PASSWORD]
-        username = config[CONF_USERNAME]
+
+        self.host = config[CONF_HOST]
+        self.password = config[CONF_PASSWORD]
+        self.username = config[CONF_USERNAME]
 
         self.success_init = False
         try:
-            self.tplink_client = TpLinkClient(password, host=host, username=username)
+            self.tplink_client = TpLinkClient(self.password, host=self.host, username=self.username)
 
             self.last_results = {}
 
